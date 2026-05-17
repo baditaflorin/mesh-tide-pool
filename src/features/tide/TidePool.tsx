@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTilt } from "@baditaflorin/mesh-common";
 import { createRoomSync } from "../sync/yjsRoom";
 import { createClockSync } from "../sync/clockSync";
 import { maybeFetchTurnCredentials } from "../sync/iceConfig";
@@ -9,10 +10,6 @@ type Awareness = {
   getStates: () => Map<number, Record<string, unknown>>;
   on: (event: string, cb: () => void) => void;
   off: (event: string, cb: () => void) => void;
-};
-
-type DeviceOrientationRequest = {
-  requestPermission?: () => Promise<"granted" | "denied">;
 };
 
 export type Mode = "free" | "river";
@@ -33,8 +30,9 @@ const FREQUENCY = 14; // cycles per virtual-pool diagonal
 
 export function TidePool({ roomId, hue, mode, intensity }: Props) {
   const [armed, setArmed] = useState(false);
-  const [motionGranted, setMotionGranted] = useState(false);
-  const [permissionError, setPermissionError] = useState<string | null>(null);
+  const tilt = useTilt({ armed });
+  const motionGranted = tilt.ready;
+  const permissionError = tilt.error;
   const [peers, setPeers] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const myPosRef = useRef<{ x: number; y: number }>({ x: 0.5, y: 0.5 });
@@ -61,17 +59,13 @@ export function TidePool({ roomId, hue, mode, intensity }: Props) {
 
   // DeviceOrientation -> myPos. Default to center if not granted.
   useEffect(() => {
-    if (!armed || !motionGranted) return undefined;
-    const onOrient = (e: DeviceOrientationEvent) => {
-      const gamma = e.gamma ?? 0; // -90..90 left/right
-      const beta = e.beta ?? 0; // -180..180 front/back
-      const x = clamp01(0.5 + gamma / 60);
-      const y = clamp01(0.5 + (beta - 30) / 60);
-      myPosRef.current = { x, y };
-    };
-    window.addEventListener("deviceorientation", onOrient);
-    return () => window.removeEventListener("deviceorientation", onOrient);
-  }, [armed, motionGranted]);
+    if (!armed || !motionGranted) return;
+    const gamma = tilt.gamma ?? 0; // -90..90 left/right
+    const beta = tilt.beta ?? 0; // -180..180 front/back
+    const x = clamp01(0.5 + gamma / 60);
+    const y = clamp01(0.5 + (beta - 30) / 60);
+    myPosRef.current = { x, y };
+  }, [armed, motionGranted, tilt.gamma, tilt.beta]);
 
   // Touch fallback: drag finger to move "drop"
   useEffect(() => {
@@ -232,26 +226,6 @@ export function TidePool({ roomId, hue, mode, intensity }: Props) {
     return () => cancelAnimationFrame(raf);
   }, [mesh, mode, intensity]);
 
-  const armTilt = async () => {
-    const req = (window as unknown as { DeviceOrientationEvent?: DeviceOrientationRequest })
-      .DeviceOrientationEvent;
-    if (req?.requestPermission) {
-      try {
-        const result = await req.requestPermission();
-        if (result === "granted") {
-          setMotionGranted(true);
-        } else {
-          setPermissionError("Motion permission denied — you can drag instead.");
-        }
-      } catch (err) {
-        setPermissionError(`Motion error: ${err}`);
-      }
-    } else {
-      setMotionGranted(true);
-    }
-    setArmed(true);
-  };
-
   if (!armed) {
     return (
       <div className="tide-arm">
@@ -260,7 +234,7 @@ export function TidePool({ roomId, hue, mode, intensity }: Props) {
           Each phone is a drop in a shared 2D pool. Tilt your phone (or drag a finger) to move your
           drop; every phone renders the same wave interference pattern from all drops at once.
         </p>
-        <button type="button" className="tide-arm-button" onClick={() => void armTilt()}>
+        <button type="button" className="tide-arm-button" onClick={() => setArmed(true)}>
           Allow tilt and connect
         </button>
         {permissionError && <p className="tide-error">{permissionError}</p>}
