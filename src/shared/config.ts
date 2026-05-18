@@ -1,6 +1,9 @@
 export const appConfig = {
   appName: "mesh-tide-pool",
   storagePrefix: "mesh-tide-pool",
+  description:
+    "Peer-to-peer mesh tide pool. Each phone is a colored ripple; drag to mix; rooms drift between free pool and river → sink modes.",
+  accentHex: "#4ec0f0",
   version: __APP_VERSION__,
   commit: __GIT_COMMIT__,
   repositoryUrl: "https://github.com/baditaflorin/mesh-tide-pool",
