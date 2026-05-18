@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { TidePool, type Mode } from "./features/tide/TidePool";
 import { SettingsDrawer } from "./features/settings/SettingsDrawer";
 import { appConfig } from "./shared/config";
+import { InviteShareButton } from "@baditaflorin/mesh-common";
 
 const STORAGE = {
   room: `${appConfig.storagePrefix}:room`,
@@ -49,6 +50,7 @@ export function App() {
     <div className="app-root">
       <TidePool roomId={roomId} hue={hue} mode={mode} intensity={intensity} />
 
+      <InviteShareButton appName={appConfig.appName} roomId={roomId} />
       <button
         type="button"
         className="settings-fab"
