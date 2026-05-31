@@ -103,18 +103,27 @@ export function TidePool({ roomId, hue, mode, intensity }: Props) {
       });
     };
 
+    const myClientId = awareness.clientID;
+
     const refreshDrops = () => {
       const fresh = Date.now() - 6000;
       const next: Drop[] = [];
+      const remote: Drop[] = [];
       const states = awareness.getStates();
-      states.forEach((state) => {
+      states.forEach((state, clientId) => {
         const d = state["drop"] as Drop | undefined;
         if (!d) return;
         if ((d.ts ?? 0) < fresh) return;
         next.push(d);
+        if (clientId !== myClientId) remote.push(d);
       });
       dropsRef.current = next;
       setPeers(Math.max(0, next.length - 1));
+      // Test/diagnostics hook: the drops THIS peer currently sees from OTHER
+      // peers, straight off awareness. Read cross-peer in e2e to prove that a
+      // remote peer's tilt-driven position actually crossed the mesh (it would
+      // be empty if the position only ever lived in the mover's local state).
+      (window as unknown as { __tideRemoteDrops?: Drop[] }).__tideRemoteDrops = remote;
     };
 
     publish();
