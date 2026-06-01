@@ -2,7 +2,7 @@ export const appConfig = {
   appName: "mesh-tide-pool",
   storagePrefix: "mesh-tide-pool",
   description:
-    "Peer-to-peer mesh tide pool. Each phone is a colored ripple; drag to mix; rooms drift between free pool and river → sink modes.",
+    "Each phone is a drop in a shared 2D wave pool. Tilt (or drag) to move your drop; every phone renders the same live interference field. Open on two phones in one room to try it.",
   accentHex: "#4ec0f0",
   version: __APP_VERSION__,
   commit: __GIT_COMMIT__,
